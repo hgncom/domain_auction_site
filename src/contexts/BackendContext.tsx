@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { login, register } from '../utils/authUtils';
 import { addDomain, updateDomain, removeDomain } from '../utils/domainUtils';
 import { updateUser, removeUser, resetUserPassword } from '../utils/userUtils';
-import { addNotification, removeNotification, markNotificationAsRead } from '../utils/notificationUtils';
 import { logActivity, getUserActivityLogs } from '../utils/activityLogUtils';
 import { exportData } from '../utils/exportUtils';
+import { addNotification, removeNotification } from '../utils/notificationUtils';
 
 export interface Domain {
   id: number;
@@ -39,11 +39,9 @@ export interface Bid {
 
 export interface Notification {
   id: number;
-  userId: number;
+  type: 'success' | 'error' | 'info';
   title: string;
   message: string;
-  read: boolean;
-  createdAt: Date;
 }
 
 export interface ActivityLog {
@@ -63,9 +61,8 @@ interface BackendContextType {
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   placeBid: (domainId: number, amount: number) => Promise<boolean>;
-  addNotification: (userId: number, title: string, message: string) => void;
+  addNotification: (type: 'success' | 'error' | 'info', title: string, message: string) => void;
   removeNotification: (id: number) => void;
-  markNotificationAsRead: (id: number) => void;
   addDomain: (domain: Omit<Domain, 'id'>) => Promise<Domain>;
   updateDomain: (id: number, updatedDomain: Partial<Domain>) => Promise<Domain>;
   removeDomain: (id: number) => Promise<boolean>;
@@ -111,6 +108,15 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ]);
   }, []);
 
+  const addNotificationToState = useCallback((type: 'success' | 'error' | 'info', title: string, message: string) => {
+    const newNotification = addNotification(notifications, type, title, message);
+    setNotifications(prev => [...prev, newNotification]);
+  }, [notifications]);
+
+  const removeNotificationFromState = useCallback((id: number) => {
+    setNotifications(prev => removeNotification(prev, id));
+  }, []);
+
   const loginUser = async (email: string, password: string): Promise<boolean> => {
     const user = login(users, email, password);
     if (user) {
@@ -118,34 +124,45 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setCurrentUser({ ...updatedUser, bids: bids.filter(b => b.userId === user.id) });
       updateUser(users, user.id, updatedUser);
       logActivity(activityLogs, user.id, 'User logged in');
+      addNotificationToState('success', 'Login Successful', `Welcome back, ${user.name}!`);
       return true;
     }
+    addNotificationToState('error', 'Login Failed', 'Invalid email or password.');
     return false;
   };
 
   const registerUser = async (name: string, email: string, password: string): Promise<boolean> => {
     if (users.some(u => u.email === email)) {
+      addNotificationToState('error', 'Registration Failed', 'Email already in use.');
       return false;
     }
     const newUser = register(users, name, email, password);
     setUsers([...users, newUser]);
     setCurrentUser({ ...newUser, bids: [] });
     logActivity(activityLogs, newUser.id, 'User registered');
+    addNotificationToState('success', 'Registration Successful', `Welcome, ${newUser.name}!`);
     return true;
   };
 
   const logoutUser = () => {
     if (currentUser) {
       logActivity(activityLogs, currentUser.id, 'User logged out');
+      addNotificationToState('info', 'Logged Out', 'You have been successfully logged out.');
     }
     setCurrentUser(null);
   };
 
   const placeBidOnDomain = async (domainId: number, amount: number): Promise<boolean> => {
-    if (!currentUser) return false;
+    if (!currentUser) {
+      addNotificationToState('error', 'Bid Failed', 'You must be logged in to place a bid.');
+      return false;
+    }
 
     const domain = domains.find(d => d.id === domainId);
-    if (!domain || amount <= domain.currentBid || amount < (domain.currentBid + domain.minimumBidIncrement)) return false;
+    if (!domain || amount <= domain.currentBid || amount < (domain.currentBid + domain.minimumBidIncrement)) {
+      addNotificationToState('error', 'Bid Failed', 'Invalid bid amount.');
+      return false;
+    }
 
     const newBid: Bid = {
       id: bids.length + 1,
@@ -168,7 +185,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     });
 
-    addNotification(notifications, currentUser.id, "Bid Successful", `Your bid of $${amount} on ${domain.name} was successful!`);
+    addNotificationToState('success', 'Bid Placed', `Your bid of $${amount} on ${domain.name} was successful!`);
     logActivity(activityLogs, currentUser.id, `Placed bid of $${amount} on domain ${domain.name}`);
     return true;
   };
@@ -177,6 +194,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const newDomain = addDomain(domains, domain);
     setDomains([...domains, newDomain]);
     logActivity(activityLogs, currentUser?.id || 0, `Added new domain: ${domain.name}`);
+    addNotificationToState('success', 'Domain Added', `New domain ${domain.name} has been added to the system.`);
     return newDomain;
   };
 
@@ -184,6 +202,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const updated = updateDomain(domains, id, updatedDomain);
     setDomains(domains.map(d => d.id === id ? updated : d));
     logActivity(activityLogs, currentUser?.id || 0, `Updated domain: ${domains.find(d => d.id === id)?.name}`);
+    addNotificationToState('success', 'Domain Updated', `Domain ${updated.name} has been updated.`);
     return updated;
   };
 
@@ -191,6 +210,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const domainName = domains.find(d => d.id === id)?.name;
     setDomains(removeDomain(domains, id));
     logActivity(activityLogs, currentUser?.id || 0, `Removed domain: ${domainName}`);
+    addNotificationToState('info', 'Domain Removed', `Domain ${domainName} has been removed from the system.`);
     return true;
   };
 
@@ -201,6 +221,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setCurrentUser(null);
     }
     logActivity(activityLogs, currentUser?.id || 0, `Removed user: ${userName}`);
+    addNotificationToState('info', 'User Removed', `User ${userName} has been removed from the system.`);
     return true;
   };
 
@@ -208,6 +229,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const updated = updateUser(users, id, updates);
     setUsers(users.map(u => u.id === id ? updated : u));
     logActivity(activityLogs, currentUser?.id || 0, `Updated user: ${users.find(u => u.id === id)?.name}`);
+    addNotificationToState('success', 'User Updated', `User ${updated.name} has been updated.`);
     return updated;
   };
 
@@ -218,6 +240,7 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setUsers(users.map(u => u.id === userId ? updated : u));
       console.log(`Password reset for ${user.email}. New password: ${updated.password}`);
       logActivity(activityLogs, currentUser?.id || 0, `Reset password for user: ${user.name}`);
+      addNotificationToState('success', 'Password Reset', `Password for ${user.name} has been reset.`);
     }
   };
 
@@ -257,6 +280,25 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return domains;
   }, [domains]);
 
+  const checkAuctionUpdates = useCallback(() => {
+    domains.forEach((domain) => {
+      const userBid = bids.find((bid) => bid.domainId === domain.id && bid.userId === currentUser?.id);
+      if (userBid && userBid.amount < domain.currentBid) {
+        addNotificationToState('info', 'Outbid', `You've been outbid on ${domain.name}. Current bid is $${domain.currentBid}.`);
+      }
+
+      const timeLeft = new Date(domain.endTime).getTime() - Date.now();
+      if (timeLeft <= 60000 && timeLeft > 0) { // Less than 1 minute left
+        addNotificationToState('info', 'Auction Ending Soon', `The auction for ${domain.name} is ending in less than a minute!`);
+      }
+    });
+  }, [domains, bids, currentUser, addNotificationToState]);
+
+  useEffect(() => {
+    const intervalId = setInterval(checkAuctionUpdates, 60000); // Check every minute
+    return () => clearInterval(intervalId);
+  }, [checkAuctionUpdates]);
+
   return (
     <BackendContext.Provider value={{
       domains,
@@ -268,9 +310,8 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
       register: registerUser,
       logout: logoutUser,
       placeBid: placeBidOnDomain,
-      addNotification: (userId, title, message) => setNotifications([...notifications, addNotification(notifications, userId, title, message)]),
-      removeNotification: (id) => setNotifications(removeNotification(notifications, id)),
-      markNotificationAsRead: (id) => setNotifications(markNotificationAsRead(notifications, id)),
+      addNotification: addNotificationToState,
+      removeNotification: removeNotificationFromState,
       addDomain: addDomainToSystem,
       updateDomain: updateDomainInSystem,
       removeDomain: removeDomainFromSystem,

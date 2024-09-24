@@ -1,13 +1,11 @@
 import { Notification } from '../contexts/BackendContext';
 
-export const addNotification = (notifications: Notification[], userId: number, title: string, message: string): Notification => {
+export const addNotification = (notifications: Notification[], type: 'success' | 'error' | 'info', title: string, message: string): Notification => {
   const newNotification: Notification = {
-    id: notifications.length + 1,
-    userId,
+    id: Date.now(),
+    type,
     title,
-    message,
-    read: false,
-    createdAt: new Date()
+    message
   };
   return newNotification;
 };
@@ -15,6 +13,7 @@ export const addNotification = (notifications: Notification[], userId: number, t
 export const removeNotification = (notifications: Notification[], id: number): Notification[] => {
   return notifications.filter(notif => notif.id !== id);
 };
+
 
 export const markNotificationAsRead = (notifications: Notification[], id: number): Notification[] => {
   return notifications.map(notif =>
