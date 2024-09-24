@@ -1,26 +1,44 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BackendProvider } from './contexts/BackendContext';
+import DomainAuctionSite from './pages/DomainAuctionSite';
+import AdminPanel from './pages/AdminPanel';
+import ErrorBoundary from './ErrorBoundary';
+import { useAuth } from './hooks/useAuth';
 
-function App() {
+const AppContent: React.FC = () => {
+  const { isAdmin, isModerator, isAuthenticated } = useAuth();
+  const [showAdminPanel, setShowAdminPanel] = React.useState(false);
+
+  const canAccessAdminPanel = isAuthenticated && (isAdmin || isModerator);
+
+  const toggleView = () => {
+    if (canAccessAdminPanel) {
+      setShowAdminPanel(!showAdminPanel);
+    } else {
+      alert("You don't have permission to access the Admin Panel.");
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app-container">
+      {showAdminPanel && canAccessAdminPanel ? <AdminPanel /> : <DomainAuctionSite />}
+      {canAccessAdminPanel && (
+        <button onClick={toggleView} className="toggle-view-btn">
+          {showAdminPanel ? 'Switch to User View' : 'Switch to Admin View'}
+        </button>
+      )}
     </div>
   );
-}
+};
+
+const App: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <BackendProvider>
+        <AppContent />
+      </BackendProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;
