@@ -16,6 +16,7 @@ interface NewDomainString {
   description: string;
   minimumBidIncrement: string;
   reservePrice: string;
+  category: string;
 }
 
 interface NewDomain {
@@ -24,6 +25,7 @@ interface NewDomain {
   description: string;
   minimumBidIncrement: number;
   reservePrice: number | null;
+  category: string;
 }
 
 const AdminPanel: React.FC = () => {
@@ -67,6 +69,7 @@ const AdminPanel: React.FC = () => {
     description: domain.description,
     minimumBidIncrement: parseFloat(domain.minimumBidIncrement) || 0,
     reservePrice: domain.reservePrice ? parseFloat(domain.reservePrice) : null,
+    category: domain.category,
   });
 
   const handleSetNewDomain = (value: React.SetStateAction<NewDomain>) => {
@@ -80,6 +83,7 @@ const AdminPanel: React.FC = () => {
           description: result.description,
           minimumBidIncrement: result.minimumBidIncrement.toString(),
           reservePrice: result.reservePrice ? result.reservePrice.toString() : '',
+          category: result.category,
         };
       });
     } else {
@@ -89,6 +93,7 @@ const AdminPanel: React.FC = () => {
         description: value.description,
         minimumBidIncrement: value.minimumBidIncrement.toString(),
         reservePrice: value.reservePrice ? value.reservePrice.toString() : '',
+        category: value.category,
       });
     }
   };

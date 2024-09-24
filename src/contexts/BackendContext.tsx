@@ -15,6 +15,7 @@ export interface Domain {
   description: string;
   minimumBidIncrement: number;
   reservePrice: number | null;
+  category: string;
 }
 
 export interface User {
@@ -94,12 +95,12 @@ export const BackendProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     // Simulate fetching initial data
     setDomains([
-      { id: 1, name: 'example.com', currentBid: 1000, startingBid: 1000, endTime: new Date(Date.now() + 86400000), description: 'A premium .com domain', minimumBidIncrement: 50, reservePrice: 1500 },
-      { id: 2, name: 'mydomain.net', currentBid: 500, startingBid: 500, endTime: new Date(Date.now() + 172800000), description: 'Versatile .net domain', minimumBidIncrement: 25, reservePrice: null },
+      { id: 1, name: 'example.com', currentBid: 1000, startingBid: 1000, endTime: new Date(Date.now() + 86400000), description: 'A premium .com domain', minimumBidIncrement: 50, reservePrice: 1500, category: 'tech' },
+      { id: 2, name: 'mydomain.net', currentBid: 500, startingBid: 500, endTime: new Date(Date.now() + 172800000), description: 'Versatile .net domain', minimumBidIncrement: 25, reservePrice: null, category: 'business' },
     ]);
 
     setUsers([
-      { id: 1, name: 'John Doe', email: 'john@example.com', password: 'password123', role: 'admin', permissions: ['all'], isActive: true, lastLogin: new Date(), createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          { id: 1, name: 'John Doe', email: 'john@example.com', password: 'password123', role: 'admin', permissions: ['all'], isActive: true, lastLogin: new Date(), createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
       { id: 2, name: 'Jane Smith', email: 'jane@example.com', password: 'password456', role: 'user', permissions: ['view_auctions', 'place_bids'], isActive: true, lastLogin: new Date(), createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000) },
     ]);
 

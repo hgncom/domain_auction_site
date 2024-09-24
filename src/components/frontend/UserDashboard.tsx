@@ -28,12 +28,8 @@ import { Domain } from '../../contexts/BackendContext';
 
 const ITEMS_PER_PAGE = 6;
 
-interface UserDashboardProps {
-  updatedDomains: Domain[];
-}
-
-const UserDashboard: React.FC<UserDashboardProps> = ({ updatedDomains }) => {
-  const { currentUser } = useBackend();
+const UserDashboard: React.FC = () => {
+  const { currentUser, domains } = useBackend();
   const [activeTab, setActiveTab] = useState('auctions');
   const [searchTerm, setSearchTerm] = useState('');
   const [priceFilter, setPriceFilter] = useState('all');
@@ -41,7 +37,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ updatedDomains }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredDomains = useMemo(() => {
-    return updatedDomains.filter(domain => {
+    return domains.filter(domain => {
       const nameMatch = domain.name.toLowerCase().includes(searchTerm.toLowerCase());
       const priceMatch = priceFilter === 'all' ||
         (priceFilter === 'low' && domain.currentBid < 500) ||
@@ -50,7 +46,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ updatedDomains }) => {
       const extensionMatch = extensionFilter === 'all' || domain.name.endsWith(extensionFilter);
       return nameMatch && priceMatch && extensionMatch;
     });
-  }, [updatedDomains, searchTerm, priceFilter, extensionFilter]);
+  }, [domains, searchTerm, priceFilter, extensionFilter]);
 
   const totalPages = Math.ceil(filteredDomains.length / ITEMS_PER_PAGE);
   const paginatedDomains = filteredDomains.slice(
@@ -88,7 +84,12 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ updatedDomains }) => {
               <SelectItem value=".org">.org</SelectItem>
             </SelectContent>
           </Select>
-          <Input placeholder="Search Domains" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Input
+            placeholder="Search Domains"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow"
+          />
         </div>
         <Table>
           <TableHeader>
@@ -124,7 +125,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ updatedDomains }) => {
           </TableHeader>
           <TableBody>
             {currentUser?.bids.map(bid => {
-              const domain = updatedDomains.find(d => d.id === bid.domainId);
+              const domain = domains.find(d => d.id === bid.domainId);
               return domain ? (
                 <TableRow key={bid.id}>
                   <TableCell>{domain.name}</TableCell>

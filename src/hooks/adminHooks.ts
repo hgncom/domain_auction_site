@@ -23,7 +23,14 @@ export const useAdminPanel = () => {
   } = useBackend();
 
   const [activeTab, setActiveTab] = useState('domains');
-  const [newDomain, setNewDomain] = useState({ name: '', currentBid: '', description: '', minimumBidIncrement: '', reservePrice: '' });
+  const [newDomain, setNewDomain] = useState({
+    name: '',
+    currentBid: '',
+    description: '',
+    minimumBidIncrement: '',
+    reservePrice: '',
+    category: ''
+  });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [domainPage, setDomainPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
@@ -77,8 +84,9 @@ export const useAdminPanel = () => {
         endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         minimumBidIncrement: parseFloat(newDomain.minimumBidIncrement),
         reservePrice: newDomain.reservePrice ? parseFloat(newDomain.reservePrice) : null,
+        category: newDomain.category
       });
-      setNewDomain({ name: '', currentBid: '', description: '', minimumBidIncrement: '', reservePrice: '' });
+      setNewDomain({ name: '', currentBid: '', description: '', minimumBidIncrement: '', reservePrice: '', category: '' });
       addNotification({ type: 'success', message: 'Domain added successfully' });
     } catch (error) {
       addNotification({ type: 'error', message: 'Failed to add domain' });
